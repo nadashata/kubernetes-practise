@@ -1,0 +1,56 @@
+# https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+# we can have 2 different Files for deployment and service
+# but as best practise we combine them
+# https://hub.docker.com/_/mongo/tags?name=5.0
+# we can label anything in K8
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-deployment #i dentifier for componenet
+  labels: # Optional, deployement labels, additional identifier for component 
+    app: mongodb
+spec:
+  replicas: 1 # we will not scale, if we need to scale we use statefullset
+  selector:
+    matchLabels: 
+      app: mongodb # This part we are telling K8 that all pods matchs below label
+      #Labels will be attached to this deplyement 
+      # best practise to use app as key in K8 but key can be named anything
+  template:
+    metadata:
+      labels: # Required, Pods label 
+        app: mongodb # Labels arenot unique ids as pod name , so in here we specified same lable for all replica pods
+    spec:
+      containers:
+      - name: mongodb # just name
+        image: mongo:5.0.30 # image:tag
+        ports:
+        - containerPort: 27017 #port
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-user      
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-password  
+# create seperate yaml syntax
+# https://kubernetes.io/docs/concepts/services-networking/service/
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service # endpoint to access monogo defined on confmap
+spec:
+  type: ClusterIP #by def for internal services
+  selector:
+    app: mongodb # same as pod label
+  ports:
+    - protocol: TCP
+      port: 27017 # access service common practise to be same as target "container port"
+      targetPort: 27017 # same as container port
