@@ -1,0 +1,101 @@
+1-Hour Tutorial K8 Intro with Nana
+===================================
+https://www.youtube.com/watch?v=s_o8dwzRlu4
+
+=======================================================================================================
+MiniKube
+=========
+single node contain control Pane + pods -> serves as master + worker
+To Install Mini-kube
+  - we need to have a vm | Hyper visor 
+  - or a docker installed 
+    https://docs.docker.com/engine/install/rhel/
+    https://docs.docker.com/engine/install/linux-postinstall/
+
+Note:
+  - we will have 2 docker running on this machine:
+        - one will be installedd dircetly to allow minikube to run as a containr on top of it -> that's why minikube "control pane"
+          node ip will be different than the server it self
+        - once mini kube will be installed -> it contains a docker run time embbeded with it to launch pods
+
+=======================================================================================================
+Install Docker
+===============
+sudo dnf remove docker \
+                  docker-client \
+                  docker-client-latest \
+                  docker-common \
+                  docker-latest \
+                  docker-latest-logrotate \
+                  docker-logrotate \
+                  docker-engine \
+                  podman \
+                  runc
+
+# setup repo
+sudo dnf -y install dnf-plugins-core
+sudo dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+
+# Install latest
+sudo dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# start docker 
+sudo systemctl enable --now docker
+
+# Make Sure that your are not logged as root user to avoid issue
+# docker running with root privilages
+
+# Post Installtion Steps
+# on Redhat usually create group step is already done during installtion
+
+sudo groupadd docker
+sudo usermod -aG docker $USER
+newgrp docker
+
+docker run hello-world
+
+=======================================================================================================
+Install MiniKube on Redhat8 Machine
+======================================
+https://k8s-docs.netlify.app/en/docs/tasks/tools/install-minikube/
+
+curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
+  && chmod +x minikube
+
+sudo mkdir -p /usr/local/bin/
+sudo install minikube /usr/local/bin/
+
+# we can use --force with bellow if docker still gives error -> running with root privillages
+minikube start --vm-driver=docker
+
+minikube status
+
+=======================================================================================================
+# Launching our web app
+# using kubectl which is impedded inside MiniKube
+# i used command in bellow format with -- in front -> as when i typed it with out them
+# there was an error guiding me to use them
+
+minikube kubectl -- apply -f mongo-secert.yaml  # create secret for our cluster
+minikube kubectl -- apply -f mongo-config.yaml  # create configMap for our cluster
+minikube kubectl -- apply -f mongo.yaml         # create deployment of mongo db + internal service
+minikube kubectl -- apply -f webapp.yaml        # create deployement of Nodejs based app + external service
+
+# to get MiniKube internal Ip to access webapp
+minikube get node -o wide 
+minikube ip
+
+# To view objects created
+minikube kubectl get all
+minikube kubectl get secret
+minikube kubectl get configMap
+minikube kubectl get pod
+minikube kubectl get svc
+
+# to get detailed view
+minikube kubectl describe <srv_name>
+
+# To view logs
+minikube kubectl logs <pod_name>
+
+
